@@ -1,0 +1,118 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id             String           @id @default(uuid())
+  name           String?
+  email          String?          @unique
+  role           String           @default("student")
+  createdAt      DateTime         @default(now())
+  profile        LeetCodeProfile?
+  userProblems   UserProblem[]
+  problemSessions ProblemSession[]
+  codeSubmissions CodeSubmission[]
+  aiAnalyses     AIAnalysis[]
+  careerAnalyses CareerAnalysis[]
+}
+
+model LeetCodeProfile {
+  id             String    @id @default(uuid())
+  userId         String    @unique
+  username       String
+  profileUrl     String
+  avatarUrl      String?
+  ranking        Int?
+  totalSolved    Int?
+  easySolved     Int?
+  mediumSolved   Int?
+  hardSolved     Int?
+  lastSyncedAt   DateTime?
+  createdAt      DateTime  @default(now())
+  user           User      @relation(fields: [userId], references: [id])
+}
+
+model Problem {
+  id          String        @id @default(uuid())
+  leetcodeId  String?       @unique
+  title       String
+  slug        String?
+  difficulty  String
+  url         String?
+  tags        String?
+  createdAt   DateTime      @default(now())
+  userProblems UserProblem[]
+}
+
+model UserProblem {
+  id        String    @id @default(uuid())
+  userId    String
+  problemId String
+  solvedAt  DateTime?
+  status    String    @default("solved")
+  attempts  Int       @default(1)
+  user      User      @relation(fields: [userId], references: [id])
+  problem   Problem   @relation(fields: [problemId], references: [id])
+
+  @@unique([userId, problemId])
+}
+
+model ProblemSession {
+  id            String    @id @default(uuid())
+  userId        String
+  problemId     String?
+  problemTitle  String?
+  startedAt     DateTime
+  endedAt       DateTime?
+  activeDuration Int      @default(0)
+  pauseDuration  Int      @default(0)
+  status        String    @default("active")
+  user          User      @relation(fields: [userId], references: [id])
+}
+
+model CodeSubmission {
+  id          String   @id @default(uuid())
+  userId      String
+  problemId   String?
+  code        String
+  language    String?
+  submittedAt DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id])
+  similarityResults SimilarityResult[]
+}
+
+model SimilarityResult {
+  id              String         @id @default(uuid())
+  submissionId    String
+  referenceSource String?
+  similarityScore Float
+  structuralScore Float?
+  analyzedAt      DateTime       @default(now())
+  submission      CodeSubmission @relation(fields: [submissionId], references: [id])
+}
+
+model AIAnalysis {
+  id          String   @id @default(uuid())
+  userId      String
+  problemId   String?
+  likelihood  Float
+  confidence  Float?
+  signals     String?
+  analyzedAt  DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id])
+}
+
+model CareerAnalysis {
+  id          String    @id @default(uuid())
+  userId      String
+  periodStart DateTime?
+  periodEnd   DateTime?
+  results     String
+  generatedAt DateTime  @default(now())
+  user        User      @relation(fields: [userId], references: [id])
+}
